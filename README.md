@@ -4,4 +4,4 @@
 
 ## 📦 収録ツール一覧
 
-- [chatAI_generator](./chatAI_generator/): 疑似チャットAI（ChatGPT / Gemini / Copilot）の対話動画ジェネレーター
+- [chatAI_generator](./chatAI_generator/): 疑似チャットAI風の対話動画ジェネレーター
