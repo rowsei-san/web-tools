@@ -1,2 +1,7 @@
-# web-tools
-My collection of handy web tools — built to do just what's needed, exactly when it's needed.
+# 🛠️ Web Tools
+
+こまごとした単発のWebツール（HTML/CSS/JS）を集めたリポジトリです。
+
+## 📦 収録ツール一覧
+
+- [chatAI_generator](./chatAI_generator/): 疑似チャットAI（ChatGPT / Gemini / Copilot）の対話動画ジェネレーター
