@@ -34,9 +34,11 @@ function updateCanvasSize() {
   if (aspect === '9:16') {
     canvas.width = 1080;
     canvas.height = 1920;
+    canvas.style.aspectRatio = '9 / 16';
   } else {
     canvas.width = 1920;
     canvas.height = 1080;
+    canvas.style.aspectRatio = '16 / 9';
   }
   renderUI();
 }
@@ -209,7 +211,7 @@ function renderCopilot(W, H) {
     if (currentPrompt.length === 0) {
       ctx.fillStyle = '#6E737A';
       ctx.font = '400 ' + fontSize + 'px sans-serif';
-      ctx.fillText('Copilot へメッセージを送る', textStartX, textStartY);
+      ctx.fillText('メッセージを送る', textStartX, textStartY);
       if (showCursor) {
         ctx.fillStyle = '#111827';
         ctx.fillRect(textStartX + 4, textStartY - fontSize + 4, 3, fontSize + 4);
@@ -347,7 +349,7 @@ function renderGemini(W, H) {
 
     if (currentPrompt.length === 0) {
       ctx.fillStyle = '#8e9196';
-      ctx.fillText('Gemini に相談', textStartX, textStartY);
+      ctx.fillText('相談をする', textStartX, textStartY);
     } else {
       ctx.fillStyle = '#e3e3e3';
       lines.forEach(function(line, idx) {

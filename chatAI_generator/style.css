@@ -145,3 +145,5 @@ input[type="range"] {
   font-weight: 500;
   min-height: 20px;
 }
+
+#mainCanvas { max-height: 65vh !important; width: auto !important; max-width: 100% !important; object-fit: contain !important; }
