@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eseCLI PV Movie Generator - Sleek UI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0e0f12;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .header {
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 500;
+      color: #e3e3e3;
+      margin-bottom: 6px;
+    }
+    .header p {
+      font-size: 13px;
+      color: #8e9196;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .preview-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      width: 100%;
+      max-width: 960px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      border: 1px solid #2d3037;
+      background: #000;
+    }
+    .panel {
+      width: 100%;
+      max-width: 960px;
+      background: #181a1f;
+      border: 1px solid #2d3037;
+      border-radius: 12px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #c4c7c5;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    textarea, input, select {
+      background: #0e0f12;
+      border: 1px solid #3c4043;
+      border-radius: 8px;
+      color: #e3e3e3;
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    textarea {
+      height: 70px;
+      resize: vertical;
+    }
+    textarea:focus, input:focus, select:focus {
+      border-color: #a8c7fa;
+    }
+    input[type="range"] {
+      padding: 0;
+      height: 28px;
+      cursor: pointer;
+      accent-color: #a8c7fa;
+    }
+    .button-group {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .btn {
+      flex: 1;
+      background: #a8c7fa;
+      color: #040e15;
+      border: none;
+      border-radius: 20px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      text-align: center;
+    }
+    .btn:hover {
+      background: #c2e7ff;
+    }
+    .btn-secondary {
+      background: #2d3037;
+      color: #e3e3e3;
+    }
+    .btn-secondary:hover {
+      background: #3c4043;
+    }
+    .btn:disabled {
+      background: #444746;
+      color: #8e9196;
+      cursor: not-allowed;
+    }
+    .status {
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 14px;
+      color: #a8c7fa;
+      font-weight: 500;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🎬 eseCLI PV用 AI入力アニメーション生成ツール</h1>
+    <p>Copilot / Gemini / ChatGPT 対応・直感ヒト揺らぎスライダー搭載</p>
+  </div>
+
+  <div class="container">
+    <!-- プレビュー（上部） -->
+    <div class="preview-container">
+      <canvas id="mainCanvas" width="1920" height="1080"></canvas>
+    </div>
+
+    <!-- コントロールパネル（下部） -->
+    <div class="panel">
+      <div class="form-group full-width">
+        <label for="promptText">入力プロンプトテキスト</label>
+        <textarea id="promptText">eseCLIを使って、ローカルファイルの更新タスクを即座に実行してください。ブラウザAIの能力を最大限に引き出します。</textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="themeSelect">AI UIテーマ</label>
+        <select id="themeSelect">
+          <option value="copilot">Copilot (Warm Light)</option>
+          <option value="gemini">Gemini (Dark)</option>
+          <option value="chatgpt">ChatGPT (Light)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="typingSpeed">入力スピード (1文字あたりの標準速度)</label>
+        <input type="number" id="typingSpeed" value="40" min="10" max="300">
+      </div>
+
+      <div class="form-group">
+        <label for="humanJitter">ヒト揺らぎ <span id="jitterLevelLabel">Lv. 2</span></label>
+        <input type="range" id="humanJitter" min="1" max="4" step="1" value="2">
+      </div>
+
+      <div class="form-group">
+        <label for="startDelay">開始前一時停止時間 (秒)</label>
+        <input type="number" id="startDelay" value="1.0" step="0.5" min="0">
+      </div>
+
+      <div class="form-group">
+        <label for="endDelay">送信後演出・余白時間 (秒)</label>
+        <input type="number" id="endDelay" value="1.5" step="0.5" min="0">
+      </div>
+
+      <div class="button-group">
+        <button id="playBtn" class="btn btn-secondary">▶ アニメーション再生</button>
+        <button id="recordBtn" class="btn">💾 動画をキャプチャ＆保存</button>
+      </div>
+
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    const promptInput = document.getElementById('promptText');
+    const themeSelect = document.getElementById('themeSelect');
+    const speedInput = document.getElementById('typingSpeed');
+    const jitterInput = document.getElementById('humanJitter');
+    const jitterLevelLabel = document.getElementById('jitterLevelLabel');
+    const startDelayInput = document.getElementById('startDelay');
+    const endDelayInput = document.getElementById('endDelay');
+    const playBtn = document.getElementById('playBtn');
+    const recordBtn = document.getElementById('recordBtn');
+    const statusEl = document.getElementById('status');
+
+    let currentText = '';
+    let showCursor = true;
+    let cursorInterval = null;
+    let isAnimating = false;
+    let enterEffectState = { active: false, scale: 1, pulseRing: 0 };
+
+    // スライダーのラベル表示更新
+    jitterInput.addEventListener('input', function() {
+      jitterLevelLabel.innerText = 'Lv. ' + jitterInput.value;
+    });
+
+    // 安全な角丸描画関数 (全ブラウザ互換)
+    function drawRoundRect(x, y, w, h, r) {
+      if (w < 2 * r) r = w / 2;
+      if (h < 2 * r) r = h / 2;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // テキストを最大幅に合わせて自動改行するヘルパー
+    function wrapText(text, maxWidth, fontSize) {
+      fontSize = fontSize || 32;
+      ctx.font = '400 ' + fontSize + 'px sans-serif';
+      if (!text) return [''];
+      
+      const words = text.split('');
+      const lines = [];
+      let currentLine = '';
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + words[i];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && i > 0) {
+          lines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      lines.push(currentLine);
+      return lines;
+    }
+
+    // 描画メイン関数
+    function renderUI(text) {
+      text = text || '';
+      const W = canvas.width;  // 1920
+      const H = canvas.height; // 1080
+      const theme = themeSelect.value;
+
+      if (theme === 'copilot') {
+        renderCopilot(W, H, text);
+      } else if (theme === 'gemini') {
+        renderGemini(W, H, text);
+      } else if (theme === 'chatgpt') {
+        renderChatGPT(W, H, text);
+      }
+    }
+
+    // 1. Copilot (Warm Light UI)
+    function renderCopilot(W, H, text) {
+      ctx.fillStyle = '#F9F6F2';
+      ctx.fillRect(0, 0, W, H);
+
+      const titleY = H / 2 - 130;
+      ctx.textAlign = 'center';
+      ctx.font = '500 52px sans-serif';
+      ctx.fillStyle = '#22252A';
+      ctx.fillText('今日はどんなことを考えていますか？', W / 2, titleY);
+
+      const barW = 1450;
+      const maxTextW = barW - 140;
+      const lines = wrapText(text, maxTextW, 32);
+      const lineHeight = 44;
+      
+      const extraHeight = Math.max(0, (lines.length - 1) * lineHeight);
+      const baseH = text.length === 0 ? 150 : 130;
+      const barH = baseH + extraHeight;
+      const barX = (W - barW) / 2;
+      const barY = titleY + 70;
+      const radius = 32;
+
+      ctx.fillStyle = '#F1ECE6';
+      drawRoundRect(barX - 6, barY - 6, barW + 12, barH + 12, radius + 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFFFF';
+      drawRoundRect(barX, barY, barW, barH, radius);
+      ctx.fill();
+      ctx.strokeStyle = '#EBE5DF';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const textStartX = barX + 36;
+      const textStartY = barY + 45;
+      ctx.textAlign = 'left';
+
+      if (text.length === 0) {
+        ctx.fillStyle = '#6E737A';
+        ctx.font = '400 30px sans-serif';
+        ctx.fillText('Copilot へメッセージを送る', textStartX, textStartY);
+        if (showCursor) {
+          ctx.fillStyle = '#111827';
+          ctx.fillRect(textStartX + 4, textStartY - 28, 3, 34);
+        }
+      } else {
+        ctx.fillStyle = '#111827';
+        ctx.font = '400 32px sans-serif';
+        lines.forEach(function(line, idx) {
+          const ly = textStartY + idx * lineHeight;
+          ctx.fillText(line, textStartX, ly);
+          if (idx === lines.length - 1 && showCursor) {
+            const lw = ctx.measureText(line).width;
+            ctx.fillStyle = '#0078D4';
+            ctx.fillRect(textStartX + lw + 4, ly - 28, 3, 34);
+          }
+        });
+      }
+
+      const btlY = barY + barH - 32;
+      ctx.strokeStyle = '#6E737A';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(barX + 45, btlY, 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(barX + 38, btlY); ctx.lineTo(barX + 52, btlY);
+      ctx.moveTo(barX + 45, btlY - 7); ctx.lineTo(barX + 45, btlY + 7);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#E5E0DA';
+      drawRoundRect(barX + 78, btlY - 18, 95, 36, 18);
+      ctx.stroke();
+      ctx.fillStyle = '#22252A';
+      ctx.font = '500 20px sans-serif';
+      ctx.fillText('Smart ∨', barX + 92, btlY + 7);
+
+      const micX = barX + barW - 90;
+      ctx.strokeStyle = '#22252A';
+      ctx.lineWidth = 2.5;
+      const heights = [10, 18, 24, 16, 8];
+      heights.forEach(function(h, idx) {
+        const x = micX + idx * 6;
+        ctx.beginPath();
+        ctx.moveTo(x, btlY - h / 2);
+        ctx.lineTo(x, btlY + h / 2);
+        ctx.stroke();
+      });
+
+      const sendBtnX = barX + barW - 40;
+      const sendBtnY = btlY;
+      const btnRadius = 20 * enterEffectState.scale;
+      const isTextReady = text.length > 0;
+
+      if (enterEffectState.pulseRing > 0) {
+        ctx.fillStyle = 'rgba(0, 120, 212, ' + (0.4 * (1 - enterEffectState.pulseRing)) + ')';
+        ctx.beginPath();
+        ctx.arc(sendBtnX, sendBtnY, btnRadius + enterEffectState.pulseRing * 35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = isTextReady ? '#0078D4' : '#E5E0DA';
+      ctx.beginPath();
+      ctx.arc(sendBtnX, sendBtnY, btnRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = isTextReady ? '#FFFFFF' : '#8E9196';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(sendBtnX, sendBtnY + 6 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX, sendBtnY - 6 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX - 5 * enterEffectState.scale, sendBtnY - 1 * enterEffectState.scale);
+      ctx.moveTo(sendBtnX, sendBtnY - 6 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX + 5 * enterEffectState.scale, sendBtnY - 1 * enterEffectState.scale);
+      ctx.stroke();
+    }
+
+    // 2. Gemini (Dark UI)
+    function renderGemini(W, H, text) {
+      const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 100, W / 2, H / 2, W);
+      bgGrad.addColorStop(0, '#131822');
+      bgGrad.addColorStop(0.6, '#0b0c10');
+      bgGrad.addColorStop(1, '#050608');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#E3E3E3';
+      ctx.font = '500 64px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('何から始めますか？', W / 2, H / 2 - 120);
+
+      const barW = 1450;
+      const maxTextW = barW - 200;
+      const lines = wrapText(text, maxTextW, 32);
+      const lineHeight = 44;
+      const extraHeight = Math.max(0, (lines.length - 1) * lineHeight);
+      const barH = 110 + extraHeight;
+      const barX = (W - barW) / 2;
+      const barY = H / 2 + 20;
+      const radius = 45;
+
+      ctx.fillStyle = '#1e1f20';
+      drawRoundRect(barX, barY, barW, barH, radius);
+      ctx.fill();
+
+      const plusX = barX + 55;
+      const plusY = barY + 55;
+      ctx.strokeStyle = '#c4c7c5';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(plusX - 12, plusY); ctx.lineTo(plusX + 12, plusY);
+      ctx.moveTo(plusX, plusY - 12); ctx.lineTo(plusX, plusY + 12);
+      ctx.stroke();
+
+      const textStartX = barX + 100;
+      const textStartY = barY + 64;
+      ctx.textAlign = 'left';
+      ctx.font = '400 32px sans-serif';
+
+      if (text.length === 0) {
+        ctx.fillStyle = '#8e9196';
+        ctx.fillText('Gemini に相談', textStartX, textStartY);
+      } else {
+        ctx.fillStyle = '#e3e3e3';
+        lines.forEach(function(line, idx) {
+          const ly = textStartY + idx * lineHeight;
+          ctx.fillText(line, textStartX, ly);
+          if (idx === lines.length - 1 && showCursor) {
+            const lw = ctx.measureText(line).width;
+            ctx.fillStyle = '#a8c7fa';
+            ctx.fillRect(textStartX + lw + 4, ly - 30, 3, 36);
+          }
+        });
+      }
+
+      const sendBtnX = barX + barW - 60;
+      const sendBtnY = barY + barH - 55;
+      const btnRadius = 24 * enterEffectState.scale;
+      const isTextReady = text.length > 0;
+
+      if (enterEffectState.pulseRing > 0) {
+        ctx.fillStyle = 'rgba(168, 199, 250, ' + (0.4 * (1 - enterEffectState.pulseRing)) + ')';
+        ctx.beginPath();
+        ctx.arc(sendBtnX, sendBtnY, btnRadius + enterEffectState.pulseRing * 35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = isTextReady ? '#a8c7fa' : '#2d3037';
+      ctx.beginPath();
+      ctx.arc(sendBtnX, sendBtnY, btnRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = isTextReady ? '#040e15' : '#8e9196';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sendBtnX, sendBtnY + 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX, sendBtnY - 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX - 6 * enterEffectState.scale, sendBtnY - 2 * enterEffectState.scale);
+      ctx.moveTo(sendBtnX, sendBtnY - 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX + 6 * enterEffectState.scale, sendBtnY - 2 * enterEffectState.scale);
+      ctx.stroke();
+    }
+
+    // 3. ChatGPT (Light UI)
+    function renderChatGPT(W, H, text) {
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#0D0D0D';
+      ctx.font = '600 52px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('今日は何をしましょうか？', W / 2, H / 2 - 130);
+
+      const barW = 1400;
+      const maxTextW = barW - 160;
+      const lines = wrapText(text, maxTextW, 32);
+      const lineHeight = 44;
+      const extraHeight = Math.max(0, (lines.length - 1) * lineHeight);
+      const barH = 110 + extraHeight;
+      const barX = (W - barW) / 2;
+      const barY = H / 2 + 10;
+      const radius = 40;
+
+      ctx.fillStyle = '#FFFFFF';
+      drawRoundRect(barX, barY, barW, barH, radius);
+      ctx.fill();
+      ctx.strokeStyle = '#E5E5E5';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const btlY = barY + barH - 55;
+      const plusX = barX + 50;
+      ctx.strokeStyle = '#0D0D0D';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(plusX - 10, btlY); ctx.lineTo(plusX + 10, btlY);
+      ctx.moveTo(plusX, btlY - 10); ctx.lineTo(plusX, btlY + 10);
+      ctx.stroke();
+
+      const textStartX = barX + 90;
+      const textStartY = barY + 60;
+      ctx.textAlign = 'left';
+      ctx.font = '400 32px sans-serif';
+
+      if (text.length === 0) {
+        ctx.fillStyle = '#8E8E93';
+        ctx.fillText('質問してみましょう', textStartX, textStartY);
+      } else {
+        ctx.fillStyle = '#0D0D0D';
+        lines.forEach(function(line, idx) {
+          const ly = textStartY + idx * lineHeight;
+          ctx.fillText(line, textStartX, ly);
+          if (idx === lines.length - 1 && showCursor) {
+            const lw = ctx.measureText(line).width;
+            ctx.fillStyle = '#0D0D0D';
+            ctx.fillRect(textStartX + lw + 4, ly - 30, 3, 36);
+          }
+        });
+      }
+
+      const sendBtnX = barX + barW - 60;
+      const sendBtnY = btlY;
+      const btnRadius = 24 * enterEffectState.scale;
+      const isTextReady = text.length > 0;
+
+      if (enterEffectState.pulseRing > 0) {
+        ctx.fillStyle = 'rgba(58, 131, 247, ' + (0.4 * (1 - enterEffectState.pulseRing)) + ')';
+        ctx.beginPath();
+        ctx.arc(sendBtnX, sendBtnY, btnRadius + enterEffectState.pulseRing * 35, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = isTextReady ? '#3A83F7' : '#E5E5E5';
+      ctx.beginPath();
+      ctx.arc(sendBtnX, sendBtnY, btnRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sendBtnX, sendBtnY + 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX, sendBtnY - 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX - 5 * enterEffectState.scale, sendBtnY - 2 * enterEffectState.scale);
+      ctx.moveTo(sendBtnX, sendBtnY - 8 * enterEffectState.scale);
+      ctx.lineTo(sendBtnX + 5 * enterEffectState.scale, sendBtnY - 2 * enterEffectState.scale);
+      ctx.stroke();
+    }
+
+    function startCursorBlink() {
+      if (cursorInterval) clearInterval(cursorInterval);
+      cursorInterval = setInterval(function() {
+        if (!isAnimating) {
+          showCursor = !showCursor;
+          renderUI(currentText);
+        }
+      }, 500);
+    }
+
+    // 初期描画
+    renderUI('');
+    startCursorBlink();
+
+    themeSelect.addEventListener('change', function() {
+      renderUI(currentText);
+    });
+
+    // Enterボタンのアニメーション
+    async function playEnterAnimation() {
+      showCursor = false;
+      for (let p = 0; p <= 1; p += 0.08) {
+        enterEffectState.pulseRing = p;
+        enterEffectState.scale = 1 + Math.sin(p * Math.PI) * 0.12;
+        renderUI(currentText);
+        await new Promise(function(r) { setTimeout(r, 16); });
+      }
+      for (let p = 1; p >= 0.85; p -= 0.05) {
+        enterEffectState.scale = p;
+        renderUI(currentText);
+        await new Promise(function(r) { setTimeout(r, 16); });
+      }
+      for (let p = 0.85; p <= 1; p += 0.05) {
+        enterEffectState.scale = p;
+        renderUI(currentText);
+        await new Promise(function(r) { setTimeout(r, 16); });
+      }
+      enterEffectState.pulseRing = 0;
+      enterEffectState.scale = 1;
+    }
+
+    // タイピングアニメーション実行コア
+    async function runAnimation() {
+      isAnimating = true;
+      const fullText = promptInput.value;
+      const charDelay = parseInt(speedInput.value) || 40;
+      const jitterLevel = parseInt(jitterInput.value) || 2;
+      const startDelayMs = parseFloat(startDelayInput.value) * 1000;
+      const endDelayMs = parseFloat(endDelayInput.value) * 1000;
+
+      // 「ヒト揺らぎ」レベルに応じた動的パラメータ割り当て
+      let jitterMax = 25;
+      let pauseMs = 180;
+      if (jitterLevel === 1) {
+        jitterMax = 10; pauseMs = 60;
+      } else if (jitterLevel === 2) {
+        jitterMax = 25; pauseMs = 180;
+      } else if (jitterLevel === 3) {
+        jitterMax = 45; pauseMs = 320;
+      } else if (jitterLevel === 4) {
+        jitterMax = 70; pauseMs = 480;
+      }
+
+      currentText = '';
+      showCursor = true;
+      enterEffectState = { active: false, scale: 1, pulseRing: 0 };
+      renderUI(currentText);
+
+      await new Promise(function(r) { setTimeout(r, startDelayMs); });
+
+      // タイピング
+      for (let i = 0; i < fullText.length; i++) {
+        const char = fullText[i];
+        currentText += char;
+        showCursor = true;
+        renderUI(currentText);
+        
+        // 基本の速度ブレ
+        const jitter = (Math.random() * 2 - 1) * jitterMax;
+        let delay = Math.max(10, charDelay + jitter);
+
+        // 句読点・スペースの場合に「思考の間（Hesitation）」を追加
+        if (pauseMs > 0 && (char === '、' || char === '。' || char === '！' || char === '？' || char === ' ' || char === '\n')) {
+          delay += pauseMs;
+        }
+
+        await new Promise(function(r) { setTimeout(r, delay); });
+      }
+
+      // 入力完了後、1拍置く
+      await new Promise(function(r) { setTimeout(r, 600); });
+      await playEnterAnimation();
+
+      // 完了後余白待機
+      await new Promise(function(r) { setTimeout(r, endDelayMs); });
+      isAnimating = false;
+    }
+
+    playBtn.addEventListener('click', async function() {
+      if (isAnimating) return;
+      playBtn.disabled = true;
+      recordBtn.disabled = true;
+      statusEl.innerText = '▶ プレビュー再生中...';
+
+      await runAnimation();
+
+      statusEl.innerText = '✅ プレビュー完了';
+      playBtn.disabled = false;
+      recordBtn.disabled = false;
+    });
+
+    recordBtn.addEventListener('click', async function() {
+      if (isAnimating) return;
+      playBtn.disabled = true;
+      recordBtn.disabled = true;
+      statusEl.innerText = '🎥 録画中...';
+
+      const stream = canvas.captureStream(60);
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = function() {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = themeSelect.value + '_typing_animation.webm';
+        a.click();
+        URL.revokeObjectURL(url);
+        statusEl.innerText = '💾 動画の保存が完了しました！';
+        playBtn.disabled = false;
+        recordBtn.disabled = false;
+      };
+
+      mediaRecorder.start();
+      await runAnimation();
+      mediaRecorder.stop();
+    });
+  </script>
+</body>
+</html>
