@@ -10,6 +10,9 @@
 ## 🎬 収録ツール一覧
 
 ### Chat AI Video Generator
+
+![Chat AI Video Generator Screenshot](./chatAI_generator/chatAI-fake-generator.png)
+
 * **概要**: チャットAI（ChatGPT / Copilot / Gemini 風）の対話アニメーション画面をリアルタイムに生成し、動画（MP4 / WebM）としてキャプチャ保存できるWebツールです。
 * **特徴**:
   * 16:9（横型・YouTube向け）/ 9:16（縦型・Shorts / TikTok / Reels 向け）のアスペクト比切り替え対応
